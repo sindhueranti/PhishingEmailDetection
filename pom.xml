@@ -5,25 +5,22 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.0.3</version>
+		<version>2.7.1</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.nyit</groupId>
 	<artifactId>PhishingEmailDetection</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
+	<packaging>jar</packaging>
 	<name>PhishingEmailDetection</name>
 	<description>Spring Project to detect Phishing Emails</description>
 	<properties>
-		<java.version>17</java.version>
+		<java.version>11</java.version>
 	</properties>
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-jersey</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-oauth2-client</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -62,11 +59,10 @@
 			<artifactId>google-api-services-gmail</artifactId>
 			<version>v1-rev110-1.25.0</version>
 		</dependency>
-		<!-- https://mvnrepository.com/artifact/javax.mail/javax.mail-api -->
 		<dependency>
 			<groupId>javax.mail</groupId>
-			<artifactId>javax.mail-api</artifactId>
-			<version>1.6.2</version>
+			<artifactId>mail</artifactId>
+			<version>1.4.7</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/io.rest-assured/json-path -->
 		<dependency>
@@ -90,7 +86,6 @@
 		<dependency>
 			<groupId>io.rest-assured</groupId>
 			<artifactId>rest-assured</artifactId>
-			<version>5.3.0</version>
 			<scope>test</scope>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/io.rest-assured/rest-assured-common -->
@@ -104,56 +99,19 @@
 			<artifactId>javax.mail</artifactId>
 			<version>1.6.2</version>
 		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.apache.james.jdkim/apache-jdkim -->
 		<dependency>
-			<groupId>org.apache.james.jdkim</groupId>
-			<artifactId>apache-jdkim</artifactId>
-			<version>0.3</version>
-			<type>pom</type>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.apache.james.jdkim/apache-jdkim-project -->
-		<dependency>
-			<groupId>org.apache.james.jdkim</groupId>
-			<artifactId>apache-jdkim-project</artifactId>
-			<version>0.3</version>
-			<type>pom</type>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.apache.james.jspf/apache-jspf -->
-		<dependency>
-			<groupId>org.apache.james.jspf</groupId>
-			<artifactId>apache-jspf</artifactId>
-			<version>1.0.3</version>
-			<type>pom</type>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.apache.james.jspf/apache-jspf-resolver -->
-		<dependency>
-			<groupId>org.apache.james.jspf</groupId>
-			<artifactId>apache-jspf-resolver</artifactId>
-			<version>1.0.3</version>
+			<groupId> me.vighnesh.api.virustotal</groupId>
+			<artifactId>VTJAPI-2.0-RELEASE-WITH-DEPENDENCIES.jar</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>C:/Users/sindh/eclipse-workspace_new1/PhishingEmailDetection/src/main/resources/WEB-INF/lib/VTJAPI-2.0-RELEASE-WITH-DEPENDENCIES.jar</systemPath>
 		</dependency>
 		<dependency>
-			<groupId>org.apache.james</groupId>
-			<artifactId>apache-mime4j</artifactId>
-			<version>0.6.1</version>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.xbill/dns -->
-		<!-- https://mvnrepository.com/artifact/dnsjava/dnsjava -->
-		<dependency>
-			<groupId>dnsjava</groupId>
-			<artifactId>dnsjava</artifactId>
+			<groupId> org.xbilll</groupId>
+			<artifactId>dnsjava-3.5.2.jar</artifactId>
 			<version>3.5.2</version>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.apache.james/apache-mime4j-core -->
-		<dependency>
-			<groupId>org.apache.james</groupId>
-			<artifactId>apache-mime4j-core</artifactId>
-			<version>0.8.1</version>
-		</dependency>
-		<!-- https://mvnrepository.com/artifact/org.apache.james/apache-mime4j-dom -->
-		<dependency>
-			<groupId>org.apache.james</groupId>
-			<artifactId>apache-mime4j-dom</artifactId>
-			<version>0.7.2</version>
+			<scope>system</scope>
+			<systemPath>C:/Users/sindh/eclipse-workspace_new1/PhishingEmailDetection/src/main/resources/WEB-INF/lib/dnsjava-3.5.2.jar</systemPath>
 		</dependency>
 	</dependencies>
 	<build>

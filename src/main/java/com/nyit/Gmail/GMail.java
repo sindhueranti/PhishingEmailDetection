@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -29,9 +30,12 @@ import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.GmailScopes;
 import com.google.api.services.gmail.model.ListMessagesResponse;
 import com.google.api.services.gmail.model.Message;
+import com.google.api.services.gmail.model.MessagePartHeader;
 import com.google.api.services.gmail.model.Thread;
 
 import io.restassured.path.json.JsonPath;
+import me.vighnesh.api.virustotal.dao.URLScanMetaData;
+import me.vighnesh.api.virustotal.dao.URLScanReport;
 
 /**
  * Date: May 31st, 2020
@@ -108,6 +112,13 @@ public class GMail {
 		return message;
 	}
 
+	public static Message getRawMessage(Gmail service, String userId, List<Message> messages, int index)
+			throws IOException {
+		Message message = service.users().messages().get(userId, messages.get(index).getId()).setFormat("raw")
+				.execute();
+		return message;
+	}
+
 	public static HashMap<String, String> getGmailData(String query) {
 		try {
 			Gmail service = getService();
@@ -115,8 +126,30 @@ public class GMail {
 			messages = listMessagesMatchingQuery(service, USER_ID, query);
 			Message message = getMessage(service, USER_ID, messages, 0);
 			JsonPath jp = new JsonPath(message.toString());
+			System.out.println("Message is:" + message.toString());
+			List<MessagePartHeader> headers = message.getPayload().getHeaders();
+			String dkimValue = null;
+
 			String subject = jp.getString("payload.headers.find { it.name == 'Subject' }.value");
+			String sentTo = jp.getString("payload.headers.find { it.name == 'To' }.value");
+			String sentFrom = jp.getString("payload.headers.find { it.name == 'From' }.value");
 			String body = new String(Base64.getDecoder().decode(jp.getString("payload.parts[0].body.data")));
+
+			for (MessagePartHeader header : headers) {
+				if ("DKIM-Signature".equals(header.getName())) {
+					dkimValue = header.getValue();
+				}
+			}
+			System.out.println("DKIM Value is:" + dkimValue);
+			String isDkimValid = DKIMVerifier.validateDKIM(dkimValue);
+			System.out.println("DKIM Is valid:" + isDkimValid);
+
+			String isDmarcValid = DmarcValidator.validateDmarc(sentTo);
+			System.out.println("Dmarc Is valid:" + isDmarcValid);
+
+			String isSpfValid = SPFValidator.validateSPF(sentTo);
+			System.out.println("SPF is Valid:" + isSpfValid);
+
 			String link = null;
 			String arr[] = body.split("\n");
 			for (String s : arr) {
@@ -125,13 +158,121 @@ public class GMail {
 					link = s.trim();
 				}
 			}
+
+			URL url = new java.net.URL(link);
+			URLScanReport urlReport = GetUrlReport.getURLReport(url);
+			Integer positives = 0;
+			if (0 == urlReport.getResponseCode()) {
+				System.out.println("Theres is no Report available for the url Provied. Calling the Scan URL Service.");
+				URLScanMetaData scanURL = URLScanner.scanURL(url);
+				if (null != scanURL && 0 == scanURL.getResponseCode()) {
+					System.out.println("Fetching the report from GetUrlReport class.");
+					urlReport = GetUrlReport.getURLReport(url);
+					if (0 != urlReport.getResponseCode()) {
+						positives = urlReport.getPositives();
+					}
+				}
+			} else {
+				positives = urlReport.getPositives();
+			}
+
 			HashMap<String, String> hm = new HashMap<String, String>();
+			System.out.println("Sent To:" + sentTo);
+			System.out.println("Sent From:" + sentFrom);
+			hm.put("to", sentTo);
+			hm.put("from", sentFrom);
 			hm.put("subject", subject);
 			hm.put("body", body);
 			hm.put("link", link);
 			return hm;
 		} catch (Exception e) {
 			System.out.println("email not found....");
+			throw new RuntimeException(e);
+		}
+	}
+
+	public static EmailResponse validateEmail(String emailId) {
+		try {
+			Gmail service = getService();
+			List<Message> messages = new ArrayList<Message>();
+			EmailResponse emailResponse = new EmailResponse();
+			String query = "label:unread";
+			Integer positives = 0;
+			Integer total = 0;
+			int positivePer = 0;
+			messages = listMessagesMatchingQuery(service, USER_ID, query);
+			Message message = getMessage(service, USER_ID, messages, 0);
+			JsonPath jp = new JsonPath(message.toString());
+			System.out.println("Message is:" + message.toString());
+			List<MessagePartHeader> headers = message.getPayload().getHeaders();
+			String dkimValue = null;
+
+			String sentTo = jp.getString("payload.headers.find { it.name == 'To' }.value");
+			String body = new String(Base64.getDecoder().decode(jp.getString("payload.parts[0].body.data")));
+
+			for (MessagePartHeader header : headers) {
+				if ("DKIM-Signature".equals(header.getName())) {
+					dkimValue = header.getValue();
+				}
+			}
+			System.out.println("DKIM Value is:" + dkimValue);
+			String isDkimValid = DKIMVerifier.validateDKIM(dkimValue);
+			System.out.println("DKIM Is valid:" + isDkimValid);
+
+			String isDmarcValid = DmarcValidator.validateDmarc(sentTo);
+			System.out.println("Dmarc Is valid:" + isDmarcValid);
+
+			String isSpfValid = SPFValidator.validateSPF(sentTo);
+			System.out.println("SPF is Valid:" + isSpfValid);
+
+			String link = null;
+			String arr[] = body.split("\n");
+			for (String s : arr) {
+				s = s.trim();
+				if (s.startsWith("http") || s.startsWith("https")) {
+					link = s.trim();
+				}
+			}
+
+			if (!StringUtils.isEmpty(link)) {
+
+				URL url = new java.net.URL(link);
+				URLScanReport urlReport = GetUrlReport.getURLReport(url);
+
+				if (0 == urlReport.getResponseCode()) {
+					System.out.println(
+							"Theres is no Report available for the url Provied. Calling the Scan URL Service.");
+					URLScanMetaData scanURL = URLScanner.scanURL(url);
+					if (null != scanURL && 0 == scanURL.getResponseCode()) {
+						System.out.println("Fetching the report from GetUrlReport class.");
+						urlReport = GetUrlReport.getURLReport(url);
+						if (0 != urlReport.getResponseCode()) {
+							positives = urlReport.getPositives();
+							total = urlReport.getTotal();
+							positivePer = (int) Math.round(EmailValidator.calculatePercentage(positives, total));
+						}
+					}
+				} else {
+					positives = urlReport.getPositives();
+					total = urlReport.getTotal();
+					positivePer = (int) Math.round(EmailValidator.calculatePercentage(positives, total));
+				}
+			}
+
+			boolean isValidEmail = EmailValidator.isValidEmail(isSpfValid, isDmarcValid, isDkimValid, positives, total);
+
+			emailResponse.setIsValidDKIM(isDkimValid);
+			emailResponse.setIsValidDmarc(isDmarcValid);
+			emailResponse.setIsValidSPF(isSpfValid);
+			emailResponse.setPositivePer(positivePer);
+			if (isValidEmail)
+				emailResponse.setEmailValidationResult(EmailConstants.VALID_EMAIL);
+			else
+				emailResponse.setEmailValidationResult(EmailConstants.INVALID_EMAIL);
+
+			return emailResponse;
+		} catch (Exception e) {
+			System.out.println("Exception Occured while trying to Validate the Email");
 			throw new RuntimeException(e);
 		}
 	}
