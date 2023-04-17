@@ -1,5 +1,6 @@
 package com.nyit.Gmail;
 
+import org.apache.commons.lang3.StringUtils;
 import org.xbill.DNS.Lookup;
 import org.xbill.DNS.Record;
 import org.xbill.DNS.TXTRecord;
@@ -7,11 +8,11 @@ import org.xbill.DNS.TextParseException;
 import org.xbill.DNS.Type;
 
 public class DmarcValidator {
-	public static String validateDmarc(String address) {
+	public static String validateDmarc(String address, String dmarcValue) {
 		
-		String[] addressParts = address.split(" ");
+		String[] addressParts = address.split("<");
 		
-		String emailId = addressParts[1].substring(1, addressParts[1].length()-1);
+		String emailId = addressParts[1].substring(0, addressParts[1].length()-1);
 		String domain = emailId.split("@")[1];
 		try {
 			// Query the DMARC record using XBill DNS library
@@ -22,6 +23,7 @@ public class DmarcValidator {
 				System.out.println("DMARC record not found for " + domain);
 				return EmailConstants.NOT_FOUND;
 			}
+			
 
 			// Extract the DMARC record from the TXT record
 			String dmarcRecord = "";
@@ -30,7 +32,7 @@ public class DmarcValidator {
 					TXTRecord txtRecord = (TXTRecord) record;
 					String txtString = txtRecord.toString();
 					if (txtString.contains("v=DMARC1")) {
-						dmarcRecord = txtString.substring(txtString.indexOf("v=DMARC1"));
+						dmarcRecord = txtString.substring(txtString.indexOf("v=DMARC1"));					
 						break;
 					} else {
 						return EmailConstants.FALSE;
@@ -44,6 +46,13 @@ public class DmarcValidator {
 				return EmailConstants.NOT_FOUND;
 			} else {
 				System.out.println("DMARC record for " + domain + ": " + dmarcRecord);
+				if(StringUtils.isNotEmpty(dmarcRecord)) {
+					if(dmarcValue.contains("pass")) {
+						return EmailConstants.TRUE;
+					} else {
+						return EmailConstants.FALSE;
+					}
+				}
 			}
 		} catch (TextParseException e) {
 			System.out.println("Error checking DMARC record for " + domain + ": " + e.getMessage());

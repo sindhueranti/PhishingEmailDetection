@@ -13,8 +13,14 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
@@ -128,26 +134,40 @@ public class GMail {
 			JsonPath jp = new JsonPath(message.toString());
 			System.out.println("Message is:" + message.toString());
 			List<MessagePartHeader> headers = message.getPayload().getHeaders();
-			String dkimValue = null;
+			String dkimValue = "";
+			String spfValue = "";
+			Integer positives = 0;
+			Integer total = 0;
+			int positivePer = 0;
+			String isDkimValid = EmailConstants.FALSE;
+			String dmarcValue = "";
 
 			String subject = jp.getString("payload.headers.find { it.name == 'Subject' }.value");
 			String sentTo = jp.getString("payload.headers.find { it.name == 'To' }.value");
 			String sentFrom = jp.getString("payload.headers.find { it.name == 'From' }.value");
-			String body = new String(Base64.getDecoder().decode(jp.getString("payload.parts[0].body.data")));
+			String body = "";
+			if (null != jp.getString("payload.parts[0]"))
+				body = new String(Base64.getDecoder().decode(jp.getString("payload.parts[0].body.data")));
+			else
+				body = message.getSnippet();
 
 			for (MessagePartHeader header : headers) {
 				if ("DKIM-Signature".equals(header.getName())) {
 					dkimValue = header.getValue();
+				} else if ("Received-SPF".equals(header.getName())) {
+					spfValue = header.getValue();
 				}
 			}
 			System.out.println("DKIM Value is:" + dkimValue);
-			String isDkimValid = DKIMVerifier.validateDKIM(dkimValue);
-			System.out.println("DKIM Is valid:" + isDkimValid);
+			if (!StringUtils.isEmpty(dkimValue)) {
+				isDkimValid = DKIMVerifier.validateDKIM(dkimValue);
+				System.out.println("DKIM Is valid:" + isDkimValid);
+			}
 
-			String isDmarcValid = DmarcValidator.validateDmarc(sentTo);
+			String isDmarcValid = DmarcValidator.validateDmarc(sentFrom, dmarcValue);
 			System.out.println("Dmarc Is valid:" + isDmarcValid);
 
-			String isSpfValid = SPFValidator.validateSPF(sentTo);
+			String isSpfValid = SPFValidator.validateSPF(sentFrom, spfValue);
 			System.out.println("SPF is Valid:" + isSpfValid);
 
 			String link = null;
@@ -159,22 +179,35 @@ public class GMail {
 				}
 			}
 
-			URL url = new java.net.URL(link);
-			URLScanReport urlReport = GetUrlReport.getURLReport(url);
-			Integer positives = 0;
-			if (0 == urlReport.getResponseCode()) {
-				System.out.println("Theres is no Report available for the url Provied. Calling the Scan URL Service.");
-				URLScanMetaData scanURL = URLScanner.scanURL(url);
-				if (null != scanURL && 0 == scanURL.getResponseCode()) {
-					System.out.println("Fetching the report from GetUrlReport class.");
-					urlReport = GetUrlReport.getURLReport(url);
-					if (0 != urlReport.getResponseCode()) {
-						positives = urlReport.getPositives();
+			System.out.println("Link is: " + link);
+
+			if (!StringUtils.isEmpty(link)) {
+
+				URL url = new java.net.URL(link);
+				URLScanReport urlReport = GetUrlReport.getURLReport(url);
+
+				if (0 == urlReport.getResponseCode()) {
+					System.out.println(
+							"Theres is no Report available for the url Provied. Calling the Scan URL Service.");
+					URLScanMetaData scanURL = URLScanner.scanURL(url);
+					if (null != scanURL && 0 == scanURL.getResponseCode()) {
+						System.out.println("Fetching the report from GetUrlReport class.");
+						urlReport = GetUrlReport.getURLReport(url);
+						if (0 != urlReport.getResponseCode()) {
+							positives = urlReport.getPositives();
+							total = urlReport.getTotal();
+							positivePer = (int) Math.round(EmailValidator.calculatePercentage(positives, total));
+						}
 					}
+				} else {
+					positives = urlReport.getPositives();
+					total = urlReport.getTotal();
+					positivePer = (int) Math.round(EmailValidator.calculatePercentage(positives, total));
 				}
-			} else {
-				positives = urlReport.getPositives();
 			}
+
+			boolean isValidEmail = EmailValidator.isValidEmail(isSpfValid, isDmarcValid, isDkimValid, positives, total);
+			System.out.println(isValidEmail);
 
 			HashMap<String, String> hm = new HashMap<String, String>();
 			System.out.println("Sent To:" + sentTo);
@@ -200,39 +233,69 @@ public class GMail {
 			Integer positives = 0;
 			Integer total = 0;
 			int positivePer = 0;
+			String isDkimValid = EmailConstants.FALSE;
 			messages = listMessagesMatchingQuery(service, USER_ID, query);
 			Message message = getMessage(service, USER_ID, messages, 0);
 			JsonPath jp = new JsonPath(message.toString());
 			System.out.println("Message is:" + message.toString());
 			List<MessagePartHeader> headers = message.getPayload().getHeaders();
-			String dkimValue = null;
+			String dkimValue = "";
+			String spfValue = "";
+			String dmarcValue = "";
+			List<String> linkList = new ArrayList();
 
-			String sentTo = jp.getString("payload.headers.find { it.name == 'To' }.value");
-			String body = new String(Base64.getDecoder().decode(jp.getString("payload.parts[0].body.data")));
-
+			String sentFrom = jp.getString("payload.headers.find { it.name == 'From' }.value");
+			String body = "";
+			String bodyStr = "";
+			if (null != jp.getString("payload.parts[0]")) {
+				bodyStr = jp.getString("payload.parts[0].body.data");
+				body = new String(Base64.getUrlDecoder().decode(bodyStr));
+			} else
+				body = message.getSnippet();
 			for (MessagePartHeader header : headers) {
 				if ("DKIM-Signature".equals(header.getName())) {
 					dkimValue = header.getValue();
+				} else if ("Received-SPF".equals(header.getName())) {
+					spfValue = header.getValue();
+				} else if ("dmarc".equals(header.getName())) {
+					dmarcValue = header.getValue();
 				}
 			}
 			System.out.println("DKIM Value is:" + dkimValue);
-			String isDkimValid = DKIMVerifier.validateDKIM(dkimValue);
+			if (!StringUtils.isEmpty(dkimValue)) {
+				isDkimValid = DKIMVerifier.validateDKIM(dkimValue);
+			}
 			System.out.println("DKIM Is valid:" + isDkimValid);
 
-			String isDmarcValid = DmarcValidator.validateDmarc(sentTo);
+			String isDmarcValid = DmarcValidator.validateDmarc(sentFrom, dmarcValue);
 			System.out.println("Dmarc Is valid:" + isDmarcValid);
 
-			String isSpfValid = SPFValidator.validateSPF(sentTo);
+			String isSpfValid = SPFValidator.validateSPF(sentFrom, spfValue);
 			System.out.println("SPF is Valid:" + isSpfValid);
 
 			String link = null;
-			String arr[] = body.split("\n");
-			for (String s : arr) {
-				s = s.trim();
-				if (s.startsWith("http") || s.startsWith("https")) {
-					link = s.trim();
+			if (body.startsWith("<html>")) {
+				Document doc = Jsoup.parse(body);
+				Elements links = doc.select("a[href]");
+				for (Element linkn : links)
+					linkList.add(linkn.attr("abs:href"));
+			}
+			if (linkList.size() > 0) {
+				link = linkList.get(0);
+			}
+			if (StringUtils.isEmpty(link)) {
+				String arr[] = body.split("\n");
+				if (arr.length == 1)
+					arr = body.split("<br/>");
+				for (String s : arr) {
+					s = s.trim();
+					if (s.startsWith("http") || s.startsWith("https")) {
+						link = s.trim();
+					}
 				}
 			}
+
+			System.out.println("Link is: " + link);
 
 			if (!StringUtils.isEmpty(link)) {
 
@@ -273,7 +336,10 @@ public class GMail {
 			return emailResponse;
 		} catch (Exception e) {
 			System.out.println("Exception Occured while trying to Validate the Email");
-			throw new RuntimeException(e);
+			if (e instanceof IndexOutOfBoundsException)
+				throw new IndexOutOfBoundsException();
+			else
+				throw new RuntimeException(e);
 		}
 	}
 

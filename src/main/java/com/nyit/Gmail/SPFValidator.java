@@ -1,22 +1,28 @@
 package com.nyit.Gmail;
 
+import org.apache.commons.lang3.StringUtils;
 import org.xbill.DNS.*;
 
 public class SPFValidator {
-	public static String validateSPF(String address) {
+	public static String validateSPF(String address, String spfValue) {
 		try {
 
-			String[] addressParts = address.split(" ");
+			String[] addressParts = address.split("<");
 
-			String emailId = addressParts[1].substring(1, addressParts[1].length() - 1);
+			String emailId = addressParts[1].substring(0, addressParts[1].length() - 1);
 			String domain = emailId.split("@")[1];
-			
+
 			// Lookup the SPF record for the domain
 			Record[] records = new Lookup(domain, Type.TXT).run();
-			
+
 			if (records == null || records.length == 0) {
 				System.out.println("SPF record not found for " + domain);
-				return EmailConstants.NOT_FOUND;
+				if (StringUtils.isEmpty(spfValue))
+					return EmailConstants.NOT_FOUND;
+				else if (spfValue.contains("pass"))
+					return EmailConstants.TRUE;
+				else
+					return EmailConstants.FALSE;
 			}
 
 			// Iterate through the TXT records and check for an SPF record
