@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.security.GeneralSecurityException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
@@ -225,10 +226,12 @@ public class GMail {
 	}
 
 	public static EmailResponse validateEmail(String emailId) {
+
+		EmailResponse emailResponse = new EmailResponse();
+
 		try {
 			Gmail service = getService();
 			List<Message> messages = new ArrayList<Message>();
-			EmailResponse emailResponse = new EmailResponse();
 			String query = "label:unread";
 			Integer positives = 0;
 			Integer total = 0;
@@ -241,7 +244,7 @@ public class GMail {
 			List<MessagePartHeader> headers = message.getPayload().getHeaders();
 			String dkimValue = "";
 			String spfValue = "";
-			String dmarcValue = "";
+			String authHeaders = "";
 			List<String> linkList = new ArrayList();
 
 			String sentFrom = jp.getString("payload.headers.find { it.name == 'From' }.value");
@@ -257,17 +260,19 @@ public class GMail {
 					dkimValue = header.getValue();
 				} else if ("Received-SPF".equals(header.getName())) {
 					spfValue = header.getValue();
-				} else if ("dmarc".equals(header.getName())) {
-					dmarcValue = header.getValue();
+				} else if ("Authentication-Results".equals(header.getName())) {
+					authHeaders = header.getValue();
 				}
 			}
+
+			System.out.println("Authentication Header:" + authHeaders);
 			System.out.println("DKIM Value is:" + dkimValue);
 			if (!StringUtils.isEmpty(dkimValue)) {
 				isDkimValid = DKIMVerifier.validateDKIM(dkimValue);
 			}
 			System.out.println("DKIM Is valid:" + isDkimValid);
 
-			String isDmarcValid = DmarcValidator.validateDmarc(sentFrom, dmarcValue);
+			String isDmarcValid = DmarcValidator.validateDmarc(sentFrom, authHeaders);
 			System.out.println("Dmarc Is valid:" + isDmarcValid);
 
 			String isSpfValid = SPFValidator.validateSPF(sentFrom, spfValue);
@@ -333,14 +338,20 @@ public class GMail {
 			else
 				emailResponse.setEmailValidationResult(EmailConstants.INVALID_EMAIL);
 
-			return emailResponse;
+			EmailResponseDAO.insertEmailResponseData(emailResponse);
+
+			System.out.println("Response Inserted Successfully");
+
 		} catch (Exception e) {
 			System.out.println("Exception Occured while trying to Validate the Email");
 			if (e instanceof IndexOutOfBoundsException)
 				throw new IndexOutOfBoundsException();
-			else
+			else if (e instanceof SQLException) {
+				System.out.println("Exception occured when trying to insert the Record:" + e.getMessage());
+			} else
 				throw new RuntimeException(e);
 		}
+		return emailResponse;
 	}
 
 	public static int getTotalCountOfMails() {

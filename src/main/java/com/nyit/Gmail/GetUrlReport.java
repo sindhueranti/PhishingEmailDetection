@@ -12,7 +12,7 @@ public class GetUrlReport {
 	public static URLScanReport getURLReport(URL url) throws MalformedURLException {
 
 		VirusTotalAPI virusTotal = VirusTotalAPI
-				.configure("d391871b14f3946f70de145e5ec32837d3cb0016f3048c21cb9c73b56d745e75");
+				.configure("API Key");
 		URLScanReport urlReport = virusTotal.getURLReport(url);
 		System.out.println("---SCAN META DATA---");
 		System.out.println("");

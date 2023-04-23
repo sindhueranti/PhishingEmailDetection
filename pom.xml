@@ -100,18 +100,25 @@
 			<version>1.6.2</version>
 		</dependency>
 		<dependency>
-			<groupId> me.vighnesh.api.virustotal</groupId>
+			<groupId>me.vighnesh.api.virustotal</groupId>
 			<artifactId>VTJAPI-2.0-RELEASE-WITH-DEPENDENCIES.jar</artifactId>
 			<version>1.0</version>
 			<scope>system</scope>
 			<systemPath>C:/Users/sindh/eclipse-workspace_new1/PhishingEmailDetection/src/main/resources/WEB-INF/lib/VTJAPI-2.0-RELEASE-WITH-DEPENDENCIES.jar</systemPath>
 		</dependency>
 		<dependency>
-			<groupId> org.xbilll</groupId>
+			<groupId>org.xbilll</groupId>
 			<artifactId>dnsjava-3.5.2.jar</artifactId>
 			<version>3.5.2</version>
 			<scope>system</scope>
 			<systemPath>C:/Users/sindh/eclipse-workspace_new1/PhishingEmailDetection/src/main/resources/WEB-INF/lib/dnsjava-3.5.2.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>com.oracle.database.jdbc</groupId>
+			<artifactId>ojdbc11</artifactId>
+			<version>21.1.0.0</version>
+			<scope>system</scope>
+			<systemPath>C:/Users/sindh/eclipse-workspace_new1/PhishingEmailDetection/src/main/resources/WEB-INF/lib/ojdbc11.jar</systemPath>
 		</dependency>
 	</dependencies>
 	<build>
