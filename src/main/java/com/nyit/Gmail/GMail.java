@@ -279,7 +279,7 @@ public class GMail {
 			System.out.println("SPF is Valid:" + isSpfValid);
 
 			String link = null;
-			if (body.startsWith("<html>")) {
+			if (body.contains("<html>")) {
 				Document doc = Jsoup.parse(body);
 				Elements links = doc.select("a[href]");
 				for (Element linkn : links)
@@ -311,7 +311,7 @@ public class GMail {
 					System.out.println(
 							"Theres is no Report available for the url Provied. Calling the Scan URL Service.");
 					URLScanMetaData scanURL = URLScanner.scanURL(url);
-					if (null != scanURL && 0 == scanURL.getResponseCode()) {
+					if (null != scanURL && 1 == scanURL.getResponseCode()) {
 						System.out.println("Fetching the report from GetUrlReport class.");
 						urlReport = GetUrlReport.getURLReport(url);
 						if (0 != urlReport.getResponseCode()) {

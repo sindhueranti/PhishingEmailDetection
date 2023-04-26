@@ -64,6 +64,10 @@ public class EmailValidator {
 					&& isDmarcValid.equalsIgnoreCase(EmailConstants.FALSE)
 					&& isDkimValid.equalsIgnoreCase(EmailConstants.NOT_FOUND)) {
 				return false;
+			} else if (isSpfValid.equalsIgnoreCase(EmailConstants.TRUE)
+					&& isDmarcValid.equalsIgnoreCase(EmailConstants.TRUE)
+					&& isDkimValid.equalsIgnoreCase(EmailConstants.NOT_FOUND)) {
+				return true;
 			} 
 		} else {
 
@@ -110,6 +114,10 @@ public class EmailValidator {
 					&& isDmarcValid.equalsIgnoreCase(EmailConstants.NOT_FOUND)
 					&& isDkimValid.equalsIgnoreCase(EmailConstants.NOT_FOUND) && positivePer > 3) {
 				return false;
+			} else if (isSpfValid.equalsIgnoreCase(EmailConstants.TRUE)
+					&& isDmarcValid.equalsIgnoreCase(EmailConstants.TRUE)
+					&& isDkimValid.equalsIgnoreCase(EmailConstants.NOT_FOUND)&& positivePer < 3) {
+				return true;
 			} else if (isSpfValid.equalsIgnoreCase(EmailConstants.TRUE)
 					&& isDmarcValid.equalsIgnoreCase(EmailConstants.TRUE)
 					&& isDkimValid.equalsIgnoreCase(EmailConstants.NOT_FOUND) && positivePer > 10) {
