@@ -43,7 +43,7 @@ public class EmailValidator {
 			} else if (isSpfValid.equalsIgnoreCase(EmailConstants.NOT_FOUND)
 					&& isDmarcValid.equalsIgnoreCase(EmailConstants.NOT_FOUND)
 					&& isDkimValid.equalsIgnoreCase(EmailConstants.NOT_FOUND)) {
-				return false;
+				return true;
 			} else if (isSpfValid.equalsIgnoreCase(EmailConstants.NOT_FOUND)
 					&& isDmarcValid.equalsIgnoreCase(EmailConstants.FALSE)
 					&& isDkimValid.equalsIgnoreCase(EmailConstants.FALSE)) {
@@ -55,7 +55,7 @@ public class EmailValidator {
 			} else if (isSpfValid.equalsIgnoreCase(EmailConstants.TRUE)
 					&& isDmarcValid.equalsIgnoreCase(EmailConstants.TRUE)
 					&& isDkimValid.equalsIgnoreCase(EmailConstants.NOT_FOUND)) {
-				return false;
+				return true;
 			} else if (isSpfValid.equalsIgnoreCase(EmailConstants.TRUE)
 					&& isDmarcValid.equalsIgnoreCase(EmailConstants.NOT_FOUND)
 					&& isDkimValid.equalsIgnoreCase(EmailConstants.NOT_FOUND)) {
@@ -64,11 +64,15 @@ public class EmailValidator {
 					&& isDmarcValid.equalsIgnoreCase(EmailConstants.FALSE)
 					&& isDkimValid.equalsIgnoreCase(EmailConstants.NOT_FOUND)) {
 				return false;
+			} else if (isSpfValid.equalsIgnoreCase(EmailConstants.NOT_FOUND)
+					&& isDmarcValid.equalsIgnoreCase(EmailConstants.TRUE)
+					&& isDkimValid.equalsIgnoreCase(EmailConstants.FALSE)) {
+				return false;
 			} else if (isSpfValid.equalsIgnoreCase(EmailConstants.TRUE)
 					&& isDmarcValid.equalsIgnoreCase(EmailConstants.TRUE)
 					&& isDkimValid.equalsIgnoreCase(EmailConstants.NOT_FOUND)) {
 				return true;
-			} 
+			}  
 		} else {
 
 			if (isSpfValid.equalsIgnoreCase(EmailConstants.TRUE) && isDmarcValid.equalsIgnoreCase(EmailConstants.TRUE)
@@ -114,7 +118,11 @@ public class EmailValidator {
 					&& isDmarcValid.equalsIgnoreCase(EmailConstants.NOT_FOUND)
 					&& isDkimValid.equalsIgnoreCase(EmailConstants.NOT_FOUND) && positivePer > 3) {
 				return false;
-			} else if (isSpfValid.equalsIgnoreCase(EmailConstants.TRUE)
+			} else if (isSpfValid.equalsIgnoreCase(EmailConstants.NOT_FOUND)
+					&& isDmarcValid.equalsIgnoreCase(EmailConstants.TRUE)
+					&& isDkimValid.equalsIgnoreCase(EmailConstants.FALSE) && positivePer > 3) {
+				return false;
+			}else if (isSpfValid.equalsIgnoreCase(EmailConstants.TRUE)
 					&& isDmarcValid.equalsIgnoreCase(EmailConstants.TRUE)
 					&& isDkimValid.equalsIgnoreCase(EmailConstants.NOT_FOUND)&& positivePer < 3) {
 				return true;

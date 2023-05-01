@@ -33,10 +33,6 @@ public class DmarcValidator {
 			if (records == null || records.length == 0) {
 				System.out.println("Dmarc record not found for " + domain);
 				dmarcResponse = EmailConstants.NOT_FOUND;
-				if (StringUtils.isEmpty(dmarcValue))
-					dmarcResponse = EmailConstants.NOT_FOUND;
-				else if (!dmarcValue.contains("pass"))
-					dmarcResponse = EmailConstants.FALSE;
 				return dmarcResponse;
 			}
 

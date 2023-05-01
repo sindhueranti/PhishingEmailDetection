@@ -42,7 +42,8 @@ public class DKIMVerifier {
 							String[] parts = txtRecord.split("; ");
 							for (String part : parts) {
 								if (part.trim().startsWith("p=")) {
-									publicKey = part.split("=")[1];
+									if (part.split("=").length == 2)
+										publicKey = part.split("=")[1];
 									break;
 								}
 							}

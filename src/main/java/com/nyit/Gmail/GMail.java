@@ -253,6 +253,9 @@ public class GMail {
 			if (null != jp.getString("payload.parts[0]")) {
 				bodyStr = jp.getString("payload.parts[0].body.data");
 				body = new String(Base64.getUrlDecoder().decode(bodyStr));
+			} else if (null != jp.getString("payload.body")) {
+				bodyStr = jp.getString("payload.body.data");
+				body = new String(Base64.getUrlDecoder().decode(bodyStr));
 			} else
 				body = message.getSnippet();
 			for (MessagePartHeader header : headers) {
